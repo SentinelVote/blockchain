@@ -1,0 +1,10 @@
+/**/node_modules/
+
+# Get this file from https://github.com/hyperledger-labs/fablo/releases
+fablo.sh
+
+# This is generated from the command `fablo.sh generate fablo-config.yaml`
+fablo-target/
+
+# Explicitly allow the file for posterity.
+!fablo-config.yaml
