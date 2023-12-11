@@ -24,10 +24,6 @@ class KVContract extends Contract {
   async putPrivateMessage(ctx, collection) {
     const transient = ctx.stub.getTransient();
     const message = transient.get("message");
-    concatenated.split("").forEach((char, i) => {
-        message[i] = char.charCodeAt(0);
-    });
-
     await ctx.stub.putPrivateData(collection, "message", message);
     return { success: "OK" };
   }
