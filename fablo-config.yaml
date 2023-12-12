@@ -16,24 +16,30 @@ orgs:
     tools:
       fabloRest: true
   - organization:
-      name: Org1
-      domain: org1.example.com
+      name: Voter
+      domain: voter.example.com
     peer:
-      instances: 2
+      instances: 8 # This value has to match 'channels.orgs.peers' value.
       db: LevelDb
     tools:
       fabloRest: true
       explorer: true
 channels:
-  - name: my-channel1
+  - name: vote-channel
     orgs:
-      - name: Org1
-        peers:
-          - peer0
+      - name: Voter
+        peers: # This value has to match 'orgs.peer.instances' value.
+          - peer0 # MUST have 'peer0' as the first peer for 'explorer' to work.
           - peer1
+          - peer2
+          - peer3
+          - peer4
+          - peer5
+          - peer6
+          - peer7
 chaincodes:
-  - name: chaincode1
+  - name: chaincode_vote
     version: 0.0.1
     lang: node
-    channel: my-channel1
+    channel: vote-channel
     directory: "./chaincode/chaincode-kv-node"
