@@ -38,11 +38,6 @@ channels:
           - peer6
           - peer7
 chaincodes:
-#  - name: chaincode_vote
-#    version: 0.0.1
-#    lang: node
-#    channel: vote-channel
-#    directory: "./chaincode/chaincode-kv-node"
   - name: chaincode_vote_go
     version: 0.0.1
     lang: golang
