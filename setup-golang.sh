@@ -38,6 +38,7 @@ go get github.com/hyperledger/fabric-chaincode-go/shim@v0.0.0-20231108144948-354
 go get github.com/hyperledger/fabric-contract-api-go/internal/utils@v1.2.2;
 go get github.com/hyperledger/fabric-contract-api-go/metadata@v1.2.2;
 go get github.com/hyperledger/fabric-protos-go/peer@v0.3.1;
+go get github.com/zbohm/lirisi
 "
 
 # From https://github.com/hyperledger/fabric-samples/blob/main/asset-transfer-basic/chaincode-go/go.mod
