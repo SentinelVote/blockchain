@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/zbohm/lirisi/client"
+	"github.com/zbohm/lirisi/ring"
 )
 
 // KVContractGo defines the Smart Contract structure
@@ -75,6 +77,27 @@ func (t *KVContractGo) VerifyPrivateMessage(ctx contractapi.TransactionContextIn
 		return false, fmt.Errorf("VERIFICATION_FAILED")
 	}
 	return true, nil
+}
+
+// GenerateAndStorePublicKey generates a public key and stores it in the ledger
+func (t *KVContractGo) GenerateAndStorePublicKey(ctx contractapi.TransactionContextInterface, key string) error {
+	// This function is used for testing the lirisi library in the chaincode environment.
+	// It will be removed in production.
+
+	// Create private key
+	status, privateKey := client.GeneratePrivateKey("prime256v1", "PEM")
+	if status != ring.Success {
+		return fmt.Errorf("Failed to generate private key: %s", ring.ErrorMessages[status])
+	}
+
+	// Create public key
+	status, publicKey := client.DerivePublicKey(privateKey, "PEM")
+	if status != ring.Success {
+		return fmt.Errorf("Failed to derive public key: %s", ring.ErrorMessages[status])
+	}
+
+	// Store public key in the ledger
+	return ctx.GetStub().PutState(key, []byte(publicKey))
 }
 
 func main() {
