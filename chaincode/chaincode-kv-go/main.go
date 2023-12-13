@@ -7,24 +7,24 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-// KVContract defines the Smart Contract structure
-type KVContract struct {
+// KVContractGo defines the Smart Contract structure
+type KVContractGo struct {
 	contractapi.Contract
 }
 
 // Instantiate is called during chaincode instantiation to initialize any data
-func (t *KVContract) Instantiate(ctx contractapi.TransactionContextInterface) error {
-	fmt.Println("KVContract Instantiated")
+func (t *KVContractGo) Instantiate(ctx contractapi.TransactionContextInterface) error {
+	fmt.Println("KVContractGo Instantiated")
 	return nil
 }
 
 // Put stores a key-value pair in the ledger
-func (t *KVContract) Put(ctx contractapi.TransactionContextInterface, key, value string) error {
+func (t *KVContractGo) Put(ctx contractapi.TransactionContextInterface, key, value string) error {
 	return ctx.GetStub().PutState(key, []byte(value))
 }
 
 // Get retrieves a value from the ledger by its key
-func (t *KVContract) Get(ctx contractapi.TransactionContextInterface, key string) (string, error) {
+func (t *KVContractGo) Get(ctx contractapi.TransactionContextInterface, key string) (string, error) {
 	value, err := ctx.GetStub().GetState(key)
 	if err != nil {
 		return "", err
@@ -36,7 +36,7 @@ func (t *KVContract) Get(ctx contractapi.TransactionContextInterface, key string
 }
 
 // PutPrivateMessage stores a private message in a specified collection
-func (t *KVContract) PutPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) error {
+func (t *KVContractGo) PutPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) error {
 	transientData, _ := ctx.GetStub().GetTransient()
 	message, ok := transientData["message"]
 	if !ok {
@@ -46,7 +46,7 @@ func (t *KVContract) PutPrivateMessage(ctx contractapi.TransactionContextInterfa
 }
 
 // GetPrivateMessage retrieves a private message from a specified collection
-func (t *KVContract) GetPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) (string, error) {
+func (t *KVContractGo) GetPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) (string, error) {
 	message, err := ctx.GetStub().GetPrivateData(collection, "message")
 	if err != nil {
 		return "", err
@@ -55,7 +55,7 @@ func (t *KVContract) GetPrivateMessage(ctx contractapi.TransactionContextInterfa
 }
 
 // VerifyPrivateMessage verifies the hash of a private message against the stored hash in a specified collection
-func (t *KVContract) VerifyPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) (bool, error) {
+func (t *KVContractGo) VerifyPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) (bool, error) {
 	transientData, _ := ctx.GetStub().GetTransient()
 	message, ok := transientData["message"]
 	if !ok {
@@ -78,13 +78,13 @@ func (t *KVContract) VerifyPrivateMessage(ctx contractapi.TransactionContextInte
 }
 
 func main() {
-	chaincode, err := contractapi.NewChaincode(&KVContract{})
+	chaincode, err := contractapi.NewChaincode(&KVContractGo{})
 	if err != nil {
-		fmt.Printf("Error create KVContract chaincode: %s", err)
+		fmt.Printf("Error create KVContractGo chaincode: %s", err)
 		return
 	}
 
 	if err := chaincode.Start(); err != nil {
-		fmt.Printf("Error starting KVContract chaincode: %s", err)
+		fmt.Printf("Error starting KVContractGo chaincode: %s", err)
 	}
 }
