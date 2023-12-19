@@ -21,8 +21,12 @@ func (t *KVContractGo) Instantiate(ctx contractapi.TransactionContextInterface) 
 }
 
 // Put stores a key-value pair in the ledger
-func (t *KVContractGo) Put(ctx contractapi.TransactionContextInterface, key, value string) error {
-	return ctx.GetStub().PutState(key, []byte(value))
+func (t *KVContractGo) Put(ctx contractapi.TransactionContextInterface, key, value string) (string, error) {
+	err := ctx.GetStub().PutState(key, []byte(value))
+	if err != nil {
+		return "", err
+	}
+	return "OK", nil
 }
 
 // Get retrieves a value from the ledger by its key
@@ -78,6 +82,8 @@ func (t *KVContractGo) VerifyPrivateMessage(ctx contractapi.TransactionContextIn
 	}
 	return true, nil
 }
+
+// Functions for Linkable Ring Signature ----------------------------------------------------------
 
 // GenerateAndStorePublicKey generates a public key and stores it in the ledger
 func (t *KVContractGo) GenerateAndStorePublicKey(ctx contractapi.TransactionContextInterface, key string) error {
