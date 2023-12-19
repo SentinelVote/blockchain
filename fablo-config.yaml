@@ -12,14 +12,14 @@ orgs:
     orderers:
       - groupName: group1
         type: raft
-        instances: 1
+        instances: 2
     tools:
       fabloRest: true
   - organization:
       name: Voter
       domain: voter.example.com
     peer:
-      instances: 9 # Set a value between 2 and 9.
+      instances: 2 # Set a value between 2 and 9.
       db: LevelDb
     tools:
       fabloRest: true
