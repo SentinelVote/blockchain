@@ -9,6 +9,7 @@ token () {
 token="00000000-0000-0000-0000-000000000000-admin"
 token=$(token)
 uuid=$(uuidgen)
+
 curl --request POST \
   --url http://localhost:8801/invoke/vote-channel/chaincode_vote_go \
   --header "Authorization: Bearer ${token}" \

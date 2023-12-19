@@ -7,8 +7,8 @@
 - docker
 - docker-compose
 - fablo
+- go 1.20 or earlier
 - jq
-- node ^18
 
 ## Potential problems with docker-compose
 
@@ -59,11 +59,5 @@ This starts docker now, and docker starts by default on boot.
 
 ## Fablo
 
-Fablo is the tool used to generate the Hyperledger Fabric network topology.
-
-Get the latest version of Fablo:
-
-```sh
-curl -fsSL https://github.com/hyperledger-labs/fablo/releases/download/1.2.0/fablo.sh -o ./fablo.sh
-chmod +x ./fablo.sh
-```
+Fablo is the tool used to generate the Hyperledger Fabric network topology. \
+Get the latest version of Fablo: run `./setup-fablo.sh` in your terminal.
