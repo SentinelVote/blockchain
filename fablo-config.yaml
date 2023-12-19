@@ -11,7 +11,7 @@ orgs:
       domain: orderer.example.com
     orderers:
       - groupName: group1
-        type: solo
+        type: raft
         instances: 1
     tools:
       fabloRest: true
@@ -19,7 +19,7 @@ orgs:
       name: Voter
       domain: voter.example.com
     peer:
-      instances: 2 # This value has to match 'channels.orgs.peers' value.
+      instances: 9 # Set a value between 2 and 9.
       db: LevelDb
     tools:
       fabloRest: true
@@ -30,13 +30,14 @@ channels:
       - name: Voter
         peers: # This value has to match 'orgs.peer.instances' value.
           - peer0 # MUST have 'peer0' as the first peer for 'explorer' to work.
-          - peer1
-         #- peer2
-         #- peer3
-         #- peer4
-         #- peer5
-         #- peer6
-         #- peer7
+          - peer1 # Do not edit, use line 22 to control number of peers.
+          - peer2 # Do not edit, use line 22 to control number of peers.
+          - peer3 # Do not edit, use line 22 to control number of peers.
+          - peer4 # Do not edit, use line 22 to control number of peers.
+          - peer5 # Do not edit, use line 22 to control number of peers.
+          - peer6 # Do not edit, use line 22 to control number of peers.
+          - peer7 # Do not edit, use line 22 to control number of peers.
+          - peer8 # Do not edit, use line 22 to control number of peers.
 chaincodes:
   - name: chaincode_vote
     version: 0.0.1
