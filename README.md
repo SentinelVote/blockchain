@@ -1,5 +1,16 @@
 # Hyperledger Fabric Blockchain
 
+## Running the network
+
+You should be in the root repository directory, i.e. `~/path/to/fabricBlockchain`.
+
+```sh
+./setup-fablo.sh
+./fablo.sh recreate
+```
+
+---
+
 ## Prerequisites
 
 - bash
@@ -9,6 +20,7 @@
 - fablo
 - go 1.20 or earlier
 - jq
+
 
 ## Potential problems with docker-compose
 
@@ -56,8 +68,3 @@ sudo systemctl enable --now docker.service docker.socket
 ```
 
 This starts docker now, and docker starts by default on boot.
-
-## Fablo
-
-Fablo is the tool used to generate the Hyperledger Fabric network topology. \
-Get the latest version of Fablo: run `./setup-fablo.sh` in your terminal.
