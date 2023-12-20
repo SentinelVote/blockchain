@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/zbohm/lirisi/client"
@@ -84,6 +85,51 @@ func (t *KVContractGo) VerifyPrivateMessage(ctx contractapi.TransactionContextIn
 }
 
 // Functions for Linkable Ring Signature ----------------------------------------------------------
+
+// PutVote stores a key-value pair in the ledger
+func (t *KVContractGo) PutVote(ctx contractapi.TransactionContextInterface, key, value string) (string, error) {
+
+	// Parse the JSON input.
+	type Request struct {
+		FoldedPublicKeys string `json:"foldedPublicKeys"`
+		Signature        string `json:"signature"`
+		Message          string `json:"message"`
+	}
+	var request Request
+	err := json.Unmarshal([]byte(value), &request)
+	if err != nil {
+		return "", err
+	}
+
+	// Validate required parameters.
+	if request.FoldedPublicKeys == "" {
+		return "", fmt.Errorf("foldedPublicKeys is required")
+	}
+	if request.Signature == "" {
+		return "", fmt.Errorf("signature is required")
+	}
+	if request.Message == "" {
+		return "", fmt.Errorf("message is required")
+	}
+
+	// Convert JSON fields to byte arrays.
+	foldedPublicKeys := []byte(request.FoldedPublicKeys)
+	signature := []byte(key)
+	message := []byte(request.Message)
+
+	// Validate the signature.
+	verify := client.VerifySignature(foldedPublicKeys, signature, message, []byte(""))
+	if verify != ring.Success {
+		return "", fmt.Errorf("signature verification failed: %s", ring.ErrorMessages[verify])
+	}
+
+	// Store the vote in the ledger.
+	err = ctx.GetStub().PutState(key, []byte(value))
+	if err != nil {
+		return "", err
+	}
+	return "OK", nil
+}
 
 // GenerateAndStorePublicKey generates a public key and stores it in the ledger
 func (t *KVContractGo) GenerateAndStorePublicKey(ctx contractapi.TransactionContextInterface, key string) error {
