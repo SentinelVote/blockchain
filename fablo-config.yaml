@@ -11,7 +11,7 @@ orgs:
       domain: orderer.example.com
     orderers:
       - groupName: group1
-        type: raft
+        type: solo
         instances: 2
     tools:
       fabloRest: true
