@@ -131,31 +131,10 @@ func (t *KVContractGo) PutVote(ctx contractapi.TransactionContextInterface, key,
 	return "OK", nil
 }
 
-// GenerateAndStorePublicKey generates a public key and stores it in the ledger
-func (t *KVContractGo) GenerateAndStorePublicKey(ctx contractapi.TransactionContextInterface, key string) error {
-	// This function is used for testing the lirisi library in the chaincode environment.
-	// It will be removed in production.
-
-	// Create private key
-	status, privateKey := client.GeneratePrivateKey("prime256v1", "PEM")
-	if status != ring.Success {
-		return fmt.Errorf("Failed to generate private key: %s", ring.ErrorMessages[status])
-	}
-
-	// Create public key
-	status, publicKey := client.DerivePublicKey(privateKey, "PEM")
-	if status != ring.Success {
-		return fmt.Errorf("Failed to derive public key: %s", ring.ErrorMessages[status])
-	}
-
-	// Store public key in the ledger
-	return ctx.GetStub().PutState(key, []byte(publicKey))
-}
-
 func main() {
 	chaincode, err := contractapi.NewChaincode(&KVContractGo{})
 	if err != nil {
-		fmt.Printf("Error create KVContractGo chaincode: %s", err)
+		fmt.Printf("Error creating KVContractGo chaincode: %s", err)
 		return
 	}
 
