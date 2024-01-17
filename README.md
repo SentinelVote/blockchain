@@ -18,9 +18,7 @@ You should be in the root repository directory, i.e. `~/path/to/fabricBlockchain
 - docker
 - docker-compose
 - fablo
-- go 1.20 or earlier
 - jq
-
 
 ## Potential problems with docker-compose
 
@@ -67,4 +65,4 @@ Then, log out and log back in.
 sudo systemctl enable --now docker.service docker.socket
 ```
 
-This starts docker now, and docker starts by default on boot.
+This starts docker now and also starts docker by default on boot.
