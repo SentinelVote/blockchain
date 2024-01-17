@@ -12,7 +12,7 @@ global:
 orgs:
   - organization:
       name: Orderer
-      domain: orderer.example.com
+      domain: orderer.sentinelvote.tech
     orderers:
       - groupName: group1
         type: solo
@@ -21,13 +21,12 @@ orgs:
       fabloRest: true
   - organization:
       name: Voter
-      domain: voter.example.com
+      domain: voter.sentinelvote.tech
     ca:
       db: postgres
     peer:
       instances: 2 # Set a value between 2 and 9.
       db: LevelDb
-      #anchorPeerInstances: 2
     tools:
       fabloRest: true
 
@@ -35,29 +34,23 @@ channels:
   - name: vote-channel
     orgs:
       - name: Voter
-        peers: # This value has to match 'orgs.peer.instances' value.
+        peers:
           - peer0 # MUST have 'peer0' as the first peer for 'explorer' to work.
-          - peer1 # Do not edit, use line 22 to control number of peers.
-          - peer2 # Do not edit, use line 22 to control number of peers.
-          - peer3 # Do not edit, use line 22 to control number of peers.
-          - peer4 # Do not edit, use line 22 to control number of peers.
-          - peer5 # Do not edit, use line 22 to control number of peers.
-          - peer6 # Do not edit, use line 22 to control number of peers.
-          - peer7 # Do not edit, use line 22 to control number of peers.
-          - peer8 # Do not edit, use line 22 to control number of peers.
+          - peer1 # Do not edit, use line 28 to control the number of peers.
+          - peer2 # Do not edit, use line 28 to control the number of peers.
+          - peer3 # Do not edit, use line 28 to control the number of peers.
+          - peer4 # Do not edit, use line 28 to control the number of peers.
+          - peer5 # Do not edit, use line 28 to control the number of peers.
+          - peer6 # Do not edit, use line 28 to control the number of peers.
+          - peer7 # Do not edit, use line 28 to control the number of peers.
+          - peer8 # Do not edit, use line 28 to control the number of peers.
 
 chaincodes:
-  - name: chaincode_vote
-    version: 0.0.1
+  - name: SentinelVote
+    version: 1.0.0
     lang: golang
     channel: vote-channel
     directory: "./chaincode"
-    privateData:
-      - name: collection_public_keys
-        orgNames:
-            - Voter
-  - name: chaincode_public_keys
-    version: 0.0.1
-    lang: golang
-    channel: vote-channel
-    directory: "./chaincode"
+
+hooks :
+  postGenerate: "sed -i 's/example.com/sentinelvote.tech/g' ./fablo-target/fabric-docker/docker-compose.yaml"
