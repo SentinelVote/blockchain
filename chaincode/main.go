@@ -1,19 +1,22 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/zbohm/lirisi/client"
 	"github.com/zbohm/lirisi/ring"
+	"regexp"
 )
 
-// KVContractGo defines the Smart Contract structure
+// KVContractGo defines the Contract structure
 type KVContractGo struct {
 	contractapi.Contract
 }
+
+// +----------------------------------------------------------------------------------------------+
+// |                                General Contract API Functions                                |
+// +----------------------------------------------------------------------------------------------+
 
 // Instantiate is called during chaincode instantiation to initialize any data
 func (t *KVContractGo) Instantiate(ctx contractapi.TransactionContextInterface) error {
@@ -42,93 +45,148 @@ func (t *KVContractGo) Get(ctx contractapi.TransactionContextInterface, key stri
 	return string(value), nil
 }
 
-// PutPrivateMessage stores a private message in a specified collection
-func (t *KVContractGo) PutPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) error {
-	transientData, _ := ctx.GetStub().GetTransient()
-	message, ok := transientData["message"]
-	if !ok {
-		return fmt.Errorf("message not found in the transient data")
-	}
-	return ctx.GetStub().PutPrivateData(collection, "message", message)
+// +----------------------------------------------------------------------------------------------+
+// |                          Linkable Ring Signavture E-Voting Functions                          |
+// +----------------------------------------------------------------------------------------------+
+
+// VoteContent is the JSON structure of a vote.
+type VoteContent struct {
+	Candidate    string      `json:"vote"`               // Capitalized name of the candidate.
+	Signature    string      `json:"voteSignature"`      // Linkable Ring Signature of Vote.
+	Constituency string      `json:"constituency"`       // UPPERCASE name of the constituency.
+	Hour         json.Number `json:"hour"`               // A number >= 0 and <= 23.
+	Valid        bool        `json:"verified,omitempty"` // True if the signature is valid.
 }
 
-// GetPrivateMessage retrieves a private message from a specified collection
-func (t *KVContractGo) GetPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) (string, error) {
-	message, err := ctx.GetStub().GetPrivateData(collection, "message")
-	if err != nil {
-		return "", err
-	}
-	return string(message), nil
-}
-
-// VerifyPrivateMessage verifies the hash of a private message against the stored hash in a specified collection
-func (t *KVContractGo) VerifyPrivateMessage(ctx contractapi.TransactionContextInterface, collection string) (bool, error) {
-	transientData, _ := ctx.GetStub().GetTransient()
-	message, ok := transientData["message"]
-	if !ok {
-		return false, fmt.Errorf("message not found in the transient data")
-	}
-
-	hasher := sha256.New()
-	hasher.Write(message)
-	currentHash := hex.EncodeToString(hasher.Sum(nil))
-
-	privateDataHash, err := ctx.GetStub().GetPrivateDataHash(collection, "message")
-	if err != nil {
-		return false, err
-	}
-
-	if hex.EncodeToString(privateDataHash) != currentHash {
-		return false, fmt.Errorf("VERIFICATION_FAILED")
-	}
-	return true, nil
-}
-
-// Functions for Linkable Ring Signature ----------------------------------------------------------
-
-// PutVote stores a key-value pair in the ledger
-func (t *KVContractGo) PutVote(ctx contractapi.TransactionContextInterface, key, value string) (string, error) {
-
-	// Parse the JSON input.
-	type Request struct {
-		FoldedPublicKeys string `json:"foldedPublicKeys"`
-		Signature        string `json:"signature"`
-		Message          string `json:"message"`
-	}
-	var request Request
-	err := json.Unmarshal([]byte(value), &request)
-	if err != nil {
-		return "", err
-	}
-
-	// Validate required parameters.
-	if request.FoldedPublicKeys == "" {
-		return "", fmt.Errorf("foldedPublicKeys is required")
-	}
-	if request.Signature == "" {
-		return "", fmt.Errorf("signature is required")
-	}
-	if request.Message == "" {
-		return "", fmt.Errorf("message is required")
-	}
-
-	// Convert JSON fields to byte arrays.
-	foldedPublicKeys := []byte(request.FoldedPublicKeys)
-	signature := []byte(key)
-	message := []byte(request.Message)
-
-	// Validate the signature.
-	verify := client.VerifySignature(foldedPublicKeys, signature, message, []byte(""))
-	if verify != ring.Success {
-		return "", fmt.Errorf("signature verification failed: %s", ring.ErrorMessages[verify])
-	}
-
-	// Store the vote in the ledger.
-	err = ctx.GetStub().PutState(key, []byte(value))
+func (t *KVContractGo) PutFoldedPublicKeys(ctx contractapi.TransactionContextInterface, value string) (string, error) {
+	err := ctx.GetStub().PutState("0", []byte(value))
 	if err != nil {
 		return "", err
 	}
 	return "OK", nil
+}
+
+// PutVote stores a vote in the ledger, where key is a UUID and value is a JSON string.
+func (t *KVContractGo) PutVote(ctx contractapi.TransactionContextInterface, key, value string) (string, error) {
+
+	// Get the stored folded public keys.
+	foldedPublicKeys, err := ctx.GetStub().GetState("0")
+	if err != nil {
+		return "", err
+	}
+
+	// Unmarshal the vote.
+	var req VoteContent
+	if err := json.Unmarshal([]byte(value), &req); err != nil {
+		return "", err
+	}
+
+	// Validate the vote.
+	req.Valid = true
+	if req.Constituency == "" {
+		req.Valid = false
+	}
+	if hour, err := req.Hour.Int64(); err != nil || hour < 0 || hour > 23 {
+		req.Valid = false
+	}
+	if req.Candidate == "" {
+		req.Valid = false
+	}
+	if matched, _ := regexp.Match(`-+BEGIN RING SIGNATURE`, []byte(req.Signature)); !matched {
+		req.Valid = false
+	}
+
+	// Validate the signature.
+	signature := []byte(req.Signature)
+	message := []byte(req.Candidate)
+	verify := client.VerifySignature(foldedPublicKeys, signature, message, []byte(""))
+	if verify != ring.Success {
+		req.Valid = false
+	}
+
+	// Marshal the vote.
+	valueWithValidity, err := json.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+
+	// Store the vote in the ledger.
+	err = ctx.GetStub().PutState(key, valueWithValidity)
+	if err != nil {
+		return "", err
+	}
+	return "OK", nil
+}
+
+// GetVotes retrieves all votes from the ledger, with statistics.
+func (t *KVContractGo) GetVotes(ctx contractapi.TransactionContextInterface) (string, error) {
+
+	var votes []VoteContent
+	keys, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return "", err
+	}
+	defer keys.Close()
+
+	var countTotal = 0
+	var countHour = [24]int{}
+	var countCandidate = make(map[string]int)
+	var countConstituency = make(map[string]int)
+
+	// Loop over all keys, append the value to the `votes` array.
+	for keys.HasNext() {
+
+		// Fetch the next key.
+		key, err := keys.Next()
+		if err != nil {
+			return "", err
+		}
+
+		// Key "0" is reserved for the folded public keys.
+		if key.Key == "0" {
+			continue
+		}
+
+		// Unmarshal the vote.
+		var vote VoteContent
+		err = json.Unmarshal(key.Value, &vote)
+		if err != nil {
+			return "", err
+		}
+		// TODO: handle invalid votes, tally them nonetheless.
+
+		hour, err := vote.Hour.Int64()
+		if err != nil {
+			return "", err
+		}
+
+		// Increment the counters.
+		countCandidate[vote.Candidate]++
+		countConstituency[vote.Constituency]++
+		countHour[hour]++
+		countTotal++
+
+		votes = append(votes, vote)
+	}
+
+	response, err := json.Marshal(struct {
+		CountCandidate    map[string]int `json:"countCandidate"`    // Number of votes per candidate.
+		CountConstituency map[string]int `json:"countConstituency"` // Number of votes per constituency.
+		CountHour         [24]int        `json:"countHour"`         // Number of votes per hour.
+		CountTotal        int            `json:"countTotal"`        // Total number of votes.
+		Raw               []VoteContent  `json:"raw"`               // Raw votes.
+	}{
+		CountCandidate:    countCandidate,
+		CountConstituency: countConstituency,
+		CountHour:         countHour,
+		CountTotal:        countTotal,
+		Raw:               votes,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return string(response), nil
 }
 
 func main() {
