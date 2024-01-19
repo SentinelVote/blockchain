@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/zbohm/lirisi/client"
 	"github.com/zbohm/lirisi/ring"
-	"regexp"
 )
 
 // KVContractGo defines the Contract structure
@@ -46,7 +47,7 @@ func (t *KVContractGo) Get(ctx contractapi.TransactionContextInterface, key stri
 }
 
 // +----------------------------------------------------------------------------------------------+
-// |                          Linkable Ring Signavture E-Voting Functions                          |
+// |                          Linkable Ring Signature E-Voting Functions                          |
 // +----------------------------------------------------------------------------------------------+
 
 // VoteContent is the JSON structure of a vote.
@@ -85,22 +86,13 @@ func (t *KVContractGo) PutVote(ctx contractapi.TransactionContextInterface, key,
 	req.Valid = true
 	if req.Constituency == "" {
 		req.Valid = false
-	}
-	if hour, err := req.Hour.Int64(); err != nil || hour < 0 || hour > 23 {
+	} else if hour, err := req.Hour.Int64(); err != nil || hour < 0 || hour > 23 {
 		req.Valid = false
-	}
-	if req.Candidate == "" {
+	} else if req.Candidate == "" {
 		req.Valid = false
-	}
-	if matched, _ := regexp.Match(`-+BEGIN RING SIGNATURE`, []byte(req.Signature)); !matched {
+	} else if matched, _ := regexp.Match(`-+BEGIN RING SIGNATURE`, []byte(req.Signature)); !matched {
 		req.Valid = false
-	}
-
-	// Validate the signature.
-	signature := []byte(req.Signature)
-	message := []byte(req.Candidate)
-	verify := client.VerifySignature(foldedPublicKeys, signature, message, []byte(""))
-	if verify != ring.Success {
+	} else if client.VerifySignature(foldedPublicKeys, []byte(req.Signature), []byte(req.Candidate), []byte("")) != ring.Success {
 		req.Valid = false
 	}
 
