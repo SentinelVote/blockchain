@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	c "github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/zbohm/lirisi/client"
 	"github.com/zbohm/lirisi/ring"
@@ -15,35 +16,21 @@ type KVContractGo struct {
 	c.Contract
 }
 
-// +----------------------------------------------------------------------------------------------+
-// |                                General Contract API Functions                                |
-// +----------------------------------------------------------------------------------------------+
-
-// Instantiate is called during chaincode instantiation to initialize any data
-func (t *KVContractGo) Instantiate(ctx c.TransactionContextInterface) error {
-	fmt.Println("KVContractGo Instantiated")
-	return nil
+// PutFoldedPublicKeys stores a private message in a specified collection
+func (t *KVContractGo) PutFoldedPublicKeys(ctx c.TransactionContextInterface, value string) error {
+	context := ctx.GetStub()
+	// If exists, remove the previous folded public keys.
+	_ = context.DelPrivateData("foldedPublicKeys", "foldedPublicKeys")
+	return context.PutPrivateData("foldedPublicKeys", "foldedPublicKeys", []byte(value))
 }
 
-// Put stores a key-value pair in the ledger
-func (t *KVContractGo) Put(ctx c.TransactionContextInterface, key, value string) (string, error) {
-	err := ctx.GetStub().PutState(key, []byte(value))
+// GetFoldedPublicKeys retrieves a private message from a specified collection
+func (t *KVContractGo) GetFoldedPublicKeys(ctx c.TransactionContextInterface) (string, error) {
+	foldedPublicKeys, err := ctx.GetStub().GetPrivateData("foldedPublicKeys", "foldedPublicKeys")
 	if err != nil {
 		return "", err
 	}
-	return "OK", nil
-}
-
-// Get retrieves a value from the ledger by its key
-func (t *KVContractGo) Get(ctx c.TransactionContextInterface, key string) (string, error) {
-	value, err := ctx.GetStub().GetState(key)
-	if err != nil {
-		return "", err
-	}
-	if value == nil {
-		return "", fmt.Errorf("NOT_FOUND")
-	}
-	return string(value), nil
+	return string(foldedPublicKeys), nil
 }
 
 // +----------------------------------------------------------------------------------------------+
@@ -57,15 +44,6 @@ type VoteContent struct {
 	Constituency string      `json:"constituency"`       // UPPERCASE name of the constituency.
 	Hour         json.Number `json:"hour"`               // A number >= 0 and <= 23.
 	Valid        bool        `json:"verified,omitempty"` // True if the signature is valid.
-}
-
-func (t *KVContractGo) PutFoldedPublicKeys(ctx c.TransactionContextInterface, value string) (string, error) {
-	_ = ctx.GetStub().DelState("0") // TODO: Remove. Only for testing to reinsert different folded public keys.
-	err := ctx.GetStub().PutState("0", []byte(value))
-	if err != nil {
-		return "", err
-	}
-	return "OK", nil
 }
 
 // PutVote stores a vote in the ledger, where key is a UUID and value is a JSON string.
@@ -133,11 +111,6 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 		key, err := keys.Next()
 		if err != nil {
 			return "", err
-		}
-
-		// Skip the folded public keys.
-		if matched, err := regexp.Match(`-+BEGIN FOLDED PUBLIC KEYS`, key.Value); err != nil || matched {
-			continue
 		}
 
 		// Unmarshal the vote.

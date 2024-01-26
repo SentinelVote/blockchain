@@ -50,23 +50,37 @@ chaincodes:
     lang: golang
     channel: vote-channel
     directory: "./chaincode"
-    
-    # TODO: Remove privateData if we don't need it.
     privateData:
       - name: foldedPublicKeys
         orgNames:
           - Voter
 
 hooks :
-  # TODO: Remove the second block of code on the postGenerate hook if we don't need private data.
   postGenerate: "
-    printf '\n%s\n' 'Replacing example.com with sentinelvote.tech in docker-compose.yaml ...' &&
-    sed -i.bak 's/example.com/sentinelvote.tech/g' fablo-target/fabric-docker/docker-compose.yaml && 
-    rm fablo-target/fabric-docker/docker-compose.yaml.bak &&
-    printf '%s\n\n' 'Replacement done' &&
-    
-    printf '\n%s\n' 'Replacing requiredPeerCount in fabric-config/collections/* ...' &&
-    sed -i.bak '5s/[0-9]/0/g' fablo-target/fabric-config/collections/SentinelVote.json &&
-    rm fablo-target/fabric-config/collections/SentinelVote.json.bak &&
-    printf '%s\n\n' 'Replacement done'
+    printf '\n'
+    && printf '%s\n\n' 'Replacing example.com with sentinelvote.tech in docker-compose.yaml ...' 
+    &&   set -x 
+    &&   sed -i.bak 's/example.com/sentinelvote.tech/g' fablo-target/fabric-docker/docker-compose.yaml  
+    &&   rm fablo-target/fabric-docker/docker-compose.yaml.bak 
+    &&   set +x >/dev/null 2>&1 
+    && printf '\n%s\n' 'Replacing requiredPeerCount in fabric-config/collections/* ...' 
+    &&   set -x 
+    &&   sed -i.bak '5s/[0-9]/0/g' fablo-target/fabric-config/collections/SentinelVote.json 
+    &&   rm fablo-target/fabric-config/collections/SentinelVote.json.bak 
+    &&   set +x >/dev/null 2>&1 
+    && printf '\n%s\n' 'Increasing max message size [ from (100 * 1024 ** 2) to (500 * 1024 ** 2) ] in bytes that GRPC server and client can receive and send ...'
+    &&   set -x
+    &&   awk '/CORE_CHAINCODE_BUILDER/ { print; print \"      - CORE_PEER_MAXRECVMSGSIZE=524288000\"; print \"      - CORE_PEER_MAXSENDMSGSIZE=524288000\"; next }1' fablo-target/fabric-docker/docker-compose.yaml > tmpfile
+    &&   mv tmpfile fablo-target/fabric-docker/docker-compose.yaml
+    &&   set +x >/dev/null 2>&1
+    && printf '\n%s\n' 'Building forked docker image of fablo-rest ...'
+    &&   set -x
+    &&   docker build -t ghcr.io/sentinelvote/fablo-rest:0.1.0 .
+    &&   set +x >/dev/null 2>&1
+    && printf '\n%s\n' 'Replacing fablo-rest docker image with forked build ...'
+    &&   set -x
+    &&   sed -i.bak 's|softwaremill/fablo-rest:${FABLO_REST_VERSION}|ghcr.io/sentinelvote/fablo-rest:0.1.0|g' fablo-target/fabric-docker/docker-compose.yaml
+    &&   rm fablo-target/fabric-docker/docker-compose.yaml.bak
+    &&   set +x >/dev/null 2>&1
+    && printf '\nAll Done!\n\n'
   "
