@@ -135,8 +135,8 @@ func (t *KVContractGo) GetVotes(ctx contractapi.TransactionContextInterface) (st
 			return "", err
 		}
 
-		// Key "0" is reserved for the folded public keys.
-		if key.Key == "0" {
+		// Skip the folded public keys.
+		if matched, err := regexp.Match(`-+BEGIN FOLDED PUBLIC KEYS`, key.Value); err != nil || matched {
 			continue
 		}
 
