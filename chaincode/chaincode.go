@@ -16,27 +16,6 @@ type KVContractGo struct {
 	c.Contract
 }
 
-// PutFoldedPublicKeys stores a private message in a specified collection
-func (t *KVContractGo) PutFoldedPublicKeys(ctx c.TransactionContextInterface, value string) error {
-	context := ctx.GetStub()
-	// If exists, remove the previous folded public keys.
-	_ = context.DelPrivateData("foldedPublicKeys", "foldedPublicKeys")
-	return context.PutPrivateData("foldedPublicKeys", "foldedPublicKeys", []byte(value))
-}
-
-// GetFoldedPublicKeys retrieves a private message from a specified collection
-func (t *KVContractGo) GetFoldedPublicKeys(ctx c.TransactionContextInterface) (string, error) {
-	foldedPublicKeys, err := ctx.GetStub().GetPrivateData("foldedPublicKeys", "foldedPublicKeys")
-	if err != nil {
-		return "", err
-	}
-	return string(foldedPublicKeys), nil
-}
-
-// +----------------------------------------------------------------------------------------------+
-// |                          Linkable Ring Signature E-Voting Functions                          |
-// +----------------------------------------------------------------------------------------------+
-
 // VoteContent is the JSON structure of a vote.
 type VoteContent struct {
 	Candidate    string      `json:"vote"`               // Capitalized name of the candidate.
@@ -92,12 +71,15 @@ func (t *KVContractGo) PutVote(ctx c.TransactionContextInterface, key, value str
 // GetVotes retrieves all votes from the ledger, with statistics.
 func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, error) {
 
-	var votes []VoteContent
 	keys, err := ctx.GetStub().GetStateByRange("", "")
 	if err != nil {
 		return "", err
 	}
-	defer keys.Close()
+	defer func(keys shim.StateQueryIteratorInterface) {
+		if err := keys.Close(); err != nil {
+			fmt.Println("Error closing keys: ", err)
+		}
+	}(keys)
 
 	var countTotal = 0
 	var countHour = [24]int{}
@@ -105,7 +87,9 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 	var countConstituency = make(map[string]int)
 
 	// Loop over all keys, append the value to the `votes` array.
+	var votes []VoteContent
 	for keys.HasNext() {
+		var vote VoteContent
 
 		// Fetch the next key.
 		key, err := keys.Next()
@@ -114,7 +98,6 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 		}
 
 		// Unmarshal the vote.
-		var vote VoteContent
 		err = json.Unmarshal(key.Value, &vote)
 		if err != nil {
 			return "", err
@@ -153,6 +136,23 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 	}
 
 	return string(response), nil
+}
+
+// PutFoldedPublicKeys stores a private message in a specified collection
+func (t *KVContractGo) PutFoldedPublicKeys(ctx c.TransactionContextInterface, value string) error {
+	context := ctx.GetStub()
+	// If exists, remove the previous folded public keys.
+	_ = context.DelPrivateData("foldedPublicKeys", "foldedPublicKeys")
+	return context.PutPrivateData("foldedPublicKeys", "foldedPublicKeys", []byte(value))
+}
+
+// GetFoldedPublicKeys retrieves a private message from a specified collection
+func (t *KVContractGo) GetFoldedPublicKeys(ctx c.TransactionContextInterface) (string, error) {
+	foldedPublicKeys, err := ctx.GetStub().GetPrivateData("foldedPublicKeys", "foldedPublicKeys")
+	if err != nil {
+		return "", err
+	}
+	return string(foldedPublicKeys), nil
 }
 
 func main() {
