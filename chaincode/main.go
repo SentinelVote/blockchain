@@ -60,6 +60,7 @@ type VoteContent struct {
 }
 
 func (t *KVContractGo) PutFoldedPublicKeys(ctx contractapi.TransactionContextInterface, value string) (string, error) {
+	_ = ctx.GetStub().DelState("0") // TODO: Remove. Only for testing to reinsert different folded public keys.
 	err := ctx.GetStub().PutState("0", []byte(value))
 	if err != nil {
 		return "", err
