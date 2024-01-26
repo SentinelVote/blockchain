@@ -4,7 +4,14 @@
 fablo.sh
 
 # This is generated from the command `fablo.sh generate fablo-config.yaml`
-fablo-target/
+fablo-target/fabric-docker.sh
+fablo-target/fabric-config/
+fablo-target/hooks/
+fablo-target/fabric-docker/scripts
+fablo-target/fabric-docker/.env
+fablo-target/fabric-docker/channel-query-scripts.sh
+fablo-target/fabric-docker/commands-generated.sh
+fablo-target/fabric-docker/snapshot-scripts.sh
 
 # Explicitly allow the file for posterity.
 !fablo-config.yaml
