@@ -6,8 +6,6 @@ global:
   tls: true
   engine: docker
   peerDevMode: false
-  tools: 
-    explorer: true
 
 orgs:
   - organization:
@@ -23,12 +21,13 @@ orgs:
       name: Voter
       domain: voter.sentinelvote.tech
     ca:
-      db: postgres
+      db: sqlite
     peer:
       instances: 2 # Set a value between 2 (minimum) and 9 (maximum).
       db: LevelDb
     tools:
       fabloRest: true
+      explorer: true
 
 channels:
   - name: vote-channel
@@ -51,6 +50,23 @@ chaincodes:
     lang: golang
     channel: vote-channel
     directory: "./chaincode"
+    
+    # TODO: Remove privateData if we don't need it.
+    privateData:
+      - name: foldedPublicKeys
+        orgNames:
+          - Voter
 
 hooks :
-  postGenerate: "sed -i 's/example.com/sentinelvote.tech/g' ./fablo-target/fabric-docker/docker-compose.yaml"
+  # TODO: Remove the second block of code on the postGenerate hook if we don't need private data.
+  postGenerate: "
+    printf '\n%s\n' 'Replacing example.com with sentinelvote.tech in docker-compose.yaml ...' &&
+    sed -i.bak 's/example.com/sentinelvote.tech/g' fablo-target/fabric-docker/docker-compose.yaml && 
+    rm fablo-target/fabric-docker/docker-compose.yaml.bak &&
+    printf '%s\n\n' 'Replacement done' &&
+    
+    printf '\n%s\n' 'Replacing requiredPeerCount in fabric-config/collections/* ...' &&
+    sed -i.bak '5s/[0-9]/0/g' fablo-target/fabric-config/collections/SentinelVote.json &&
+    rm fablo-target/fabric-config/collections/SentinelVote.json.bak &&
+    printf '%s\n\n' 'Replacement done'
+  "
