@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"regexp"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -26,17 +27,19 @@ type VoteContent struct {
 }
 
 // PutVote stores a vote in the ledger, where key is a UUID and value is a JSON string.
-func (t *KVContractGo) PutVote(ctx c.TransactionContextInterface, key, value string) (string, error) {
+func (t *KVContractGo) PutVote(ctx c.TransactionContextInterface, value string) (string, error) {
 
 	// Get the stored folded public keys.
-	foldedPublicKeys, err := ctx.GetStub().GetState("0")
+	foldedPublicKeys, err := ctx.GetStub().GetPrivateData("foldedPublicKeys", "foldedPublicKeys")
 	if err != nil {
+		fmt.Println("Error: ", err)
 		return "", err
 	}
 
 	// Unmarshal the vote.
 	var req VoteContent
 	if err := json.Unmarshal([]byte(value), &req); err != nil {
+		fmt.Println("Error: ", err)
 		return "", err
 	}
 
@@ -55,14 +58,21 @@ func (t *KVContractGo) PutVote(ctx c.TransactionContextInterface, key, value str
 	}
 
 	// Marshal the vote.
-	valueWithValidity, err := json.Marshal(req)
+	jsonVote, err := json.Marshal(req)
 	if err != nil {
+		fmt.Println("Error: ", err)
 		return "", err
 	}
 
 	// Store the vote in the ledger.
-	err = ctx.GetStub().PutState(key, valueWithValidity)
+	uuidv7, err := uuid.NewV7()
 	if err != nil {
+		fmt.Println("Error: ", err)
+		return "", err
+	}
+	err = ctx.GetStub().PutState(uuidv7.String(), jsonVote)
+	if err != nil {
+		fmt.Println("Error: ", err)
 		return "", err
 	}
 	return "OK", nil
@@ -73,6 +83,7 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 
 	keys, err := ctx.GetStub().GetStateByRange("", "")
 	if err != nil {
+		fmt.Println("Error getting keys: ", err)
 		return "", err
 	}
 	defer func(keys shim.StateQueryIteratorInterface) {
@@ -94,18 +105,21 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 		// Fetch the next key.
 		key, err := keys.Next()
 		if err != nil {
+			fmt.Println("Error fetching next key: ", err)
 			return "", err
 		}
 
 		// Unmarshal the vote.
 		err = json.Unmarshal(key.Value, &vote)
 		if err != nil {
+			fmt.Println("Error unmarshalling vote: ", err)
 			return "", err
 		}
 		// TODO: handle invalid votes, tally them nonetheless.
 
 		hour, err := vote.Hour.Int64()
 		if err != nil {
+			fmt.Println("Error converting hour to int64: ", err)
 			return "", err
 		}
 
@@ -132,25 +146,37 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 		Raw:               votes,
 	})
 	if err != nil {
+		fmt.Println("Error marshalling response: ", err)
 		return "", err
 	}
 
 	return string(response), nil
 }
 
-// PutFoldedPublicKeys stores a private message in a specified collection
+// PutFoldedPublicKeys stores the folded public keys in its collection.
+//
+// If the folded public keys were already set, the previous folded public keys will be deleted.
+// This accommodates for debugging and testing.
 func (t *KVContractGo) PutFoldedPublicKeys(ctx c.TransactionContextInterface, value string) error {
 	context := ctx.GetStub()
-	// If exists, remove the previous folded public keys.
 	_ = context.DelPrivateData("foldedPublicKeys", "foldedPublicKeys")
 	return context.PutPrivateData("foldedPublicKeys", "foldedPublicKeys", []byte(value))
 }
 
-// GetFoldedPublicKeys retrieves a private message from a specified collection
+// GetFoldedPublicKeys retrieves the folded public keys in its collection.
+//
+// If the folded public keys are not set, it returns "Missing/Unset".
+// This allows the client to perform a check without handling an error.
 func (t *KVContractGo) GetFoldedPublicKeys(ctx c.TransactionContextInterface) (string, error) {
 	foldedPublicKeys, err := ctx.GetStub().GetPrivateData("foldedPublicKeys", "foldedPublicKeys")
 	if err != nil {
-		return "", err
+		fmt.Println("Error: ", err)
+		return "Missing/Unset", err
+	} else if matched, err := regexp.Match(`-+BEGIN`, foldedPublicKeys); err != nil {
+		fmt.Println("Error: ", err)
+		return "Missing/Unset", nil
+	} else if !matched {
+		return "Missing/Unset", nil
 	}
 	return string(foldedPublicKeys), nil
 }
