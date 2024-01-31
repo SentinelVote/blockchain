@@ -73,9 +73,13 @@ hooks :
     &&   awk '/CORE_CHAINCODE_BUILDER/ { print; print \"      - CORE_PEER_MAXRECVMSGSIZE=524288000\"; print \"      - CORE_PEER_MAXSENDMSGSIZE=524288000\"; next }1' fablo-target/fabric-docker/docker-compose.yaml > tmpfile
     &&   mv tmpfile fablo-target/fabric-docker/docker-compose.yaml
     &&   set +x >/dev/null 2>&1
-    && printf '\n%s\n' 'Building forked docker image of fablo-rest ...'
+    && printf '\n%s\n' 'Creating forked docker image of fablo-rest ...'
     &&   set -x
-    &&   docker build -t ghcr.io/sentinelvote/fablo-rest:0.1.0 .
+    &&   _dockerfile=$(./setup-fablo.sh fablo_rest)
+    &&   set +x >/dev/null 2>&1
+    && printf '\n\n%s\n' 'Building forked docker image of fablo-rest ...'
+    &&   set -x
+    &&   docker build -t ghcr.io/sentinelvote/fablo-rest:0.1.0 -f $_dockerfile .
     &&   set +x >/dev/null 2>&1
     && printf '\n%s\n' 'Replacing fablo-rest docker image with forked build ...'
     &&   set -x
