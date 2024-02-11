@@ -68,6 +68,12 @@ hooks :
     &&   sed -i.bak '5s/[0-9]/0/g' fablo-target/fabric-config/collections/SentinelVote.json 
     &&   rm fablo-target/fabric-config/collections/SentinelVote.json.bak 
     &&   set +x >/dev/null 2>&1 
+    && printf '\n%s\n' 'Replacing blockchain explorer credentials in fablo-target/fabric-config/explorer/connection-profile-voter.json ...' 
+    &&   set -x
+    &&   DOUBLE_QUOTE=\"
+    &&   jq --arg id 'admin@sentinelvote.tech' --arg password 'password' '.client.adminCredential.id = $id | .client.adminCredential.password = $password' fablo-target/fabric-config/explorer/connection-profile-voter.json > tmpfile
+    &&   mv -f tmpfile fablo-target/fabric-config/explorer/connection-profile-voter.json
+    &&   set +x >/dev/null 2>&1 
     && printf '\n%s\n' 'Increasing max message size [ from (100 * 1024 ** 2) to (500 * 1024 ** 2) ] in bytes that GRPC server and client can receive and send ...'
     &&   set -x
     &&   awk '/CORE_CHAINCODE_BUILDER/ { print; print \"      - CORE_PEER_MAXRECVMSGSIZE=524288000\"; print \"      - CORE_PEER_MAXSENDMSGSIZE=524288000\"; next }1' fablo-target/fabric-docker/docker-compose.yaml > tmpfile
