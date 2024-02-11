@@ -33,9 +33,19 @@ sleep 60
 tail -f /dev/null # Leave it running.
 }
 
+patch_production() {
+sed -i 's/instances: [2-9]/instances: 9/' fablo-config.yaml
+}
+
 main () {
 test -z "$1" && default && exit 0
 case "$1" in
+  prod)
+    patch_production
+  ;;
+  production)
+    patch_production
+  ;;
   entrypoint)
     entrypoint
   ;;
