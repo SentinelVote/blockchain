@@ -93,5 +93,4 @@ hooks :
     && printf '\n%s\n' 'Replacing fablo-rest docker image with forked build ...'
     &&   sed -i.bak 's|softwaremill/fablo-rest:${FABLO_REST_VERSION}|ghcr.io/sentinelvote/fablo-rest:0.1.0|g' fablo-target/fabric-docker/docker-compose.yaml
     &&   rm -v fablo-target/fabric-docker/docker-compose.yaml.bak
-    && printf '%s%s%s\n\n' '\033[1;32m' 'All Done!' '\033[0m'
   "
