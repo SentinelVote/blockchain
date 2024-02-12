@@ -19,11 +19,11 @@ type KVContractGo struct {
 
 // VoteContent is the JSON structure of a vote.
 type VoteContent struct {
-	Candidate    string      `json:"vote"`               // Capitalized name of the candidate.
-	Signature    string      `json:"voteSignature"`      // Linkable Ring Signature of Vote.
-	Constituency string      `json:"constituency"`       // UPPERCASE name of the constituency.
-	Hour         json.Number `json:"hour"`               // A number >= 0 and <= 23.
-	Valid        bool        `json:"verified,omitempty"` // True if the signature is valid.
+	Candidate    string      `json:"vote"`          // Capitalized name of the candidate.
+	Signature    string      `json:"voteSignature"` // Linkable Ring Signature of Vote.
+	Constituency string      `json:"constituency"`  // UPPERCASE name of the constituency.
+	Hour         json.Number `json:"hour"`          // A number >= 0 and <= 23.
+	Valid        bool        `json:"verified"`      // True if the signature is valid.
 }
 
 // PutVote stores a vote in the ledger, where key is a UUID and value is a JSON string.
@@ -96,6 +96,7 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 	var countHour = [24]int{}
 	var countCandidate = make(map[string]int)
 	var countConstituency = make(map[string]int)
+	var countInvalid = 0
 
 	// Loop over all keys, append the value to the `votes` array.
 	var votes []VoteContent
@@ -115,7 +116,13 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 			fmt.Println("Error unmarshalling vote: ", err)
 			return "", err
 		}
-		// TODO: handle invalid votes, tally them nonetheless.
+
+		// Tally invalid votes (if any), then skip to the next vote.
+		if vote.Valid != true {
+			countInvalid++
+			countTotal++
+			continue
+		}
 
 		hour, err := vote.Hour.Int64()
 		if err != nil {
@@ -138,12 +145,14 @@ func (t *KVContractGo) GetVotes(ctx c.TransactionContextInterface) (string, erro
 		CountHour         [24]int        `json:"countHour"`         // Number of votes per hour.
 		CountTotal        int            `json:"countTotal"`        // Total number of votes.
 		Raw               []VoteContent  `json:"raw"`               // Raw votes.
+		CountInvalid      int            `json:"countInvalid"`      // Total number of INVALID votes.
 	}{
 		CountCandidate:    countCandidate,
 		CountConstituency: countConstituency,
 		CountHour:         countHour,
 		CountTotal:        countTotal,
 		Raw:               votes,
+		CountInvalid:      countInvalid,
 	})
 	if err != nil {
 		fmt.Println("Error marshalling response: ", err)
