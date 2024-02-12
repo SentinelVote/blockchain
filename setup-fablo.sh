@@ -1,38 +1,20 @@
 #!/bin/sh
 # shellcheck shell=dash
 
-#
-# This script downloads the latest stable release of fablo.sh
-# https://github.com/hyperledger-labs/fablo/
-#
-# TODO: Comments on switch case and dockerized build.
-#
-# Fablo generates the config files for the Hyperledger Fabric network.
-#
+fail () { printf %s\\n "Error: $1" >&2 ; exit 1 ; }
 
+# Fetch the latest stable release of https://github.com/hyperledger-labs/fablo/
 default () {
+test command -v curl || fail "Please install curl."
+
 url=https://github.com/hyperledger-labs/fablo/releases/download/1.2.0/fablo.sh
 script=$(basename $url)
 curl -fsSL "$url" -o "$script"
 chmod +x "$script"
 }
 
-fablo_rest () {
-_dockerfile=$(mktemp)
-cat <<EOF > "$_dockerfile"
-FROM softwaremill/fablo-rest:0.1.0
-RUN sed -i.bak 's/app.use(express_1.default.json({ type: () => "json" }))/app.use(express_1.default.json({ type: () => "json", limit: "500mb" }))/g' index.js
-EOF
-printf '%s' "$_dockerfile"
-}
-
-entrypoint () {
-default
-sleep 60
-./fablo.sh recreate
-tail -f /dev/null # Leave it running.
-}
-
+# Deploy the blockchain with 9 peer nodes instead of 2 (default).
+# This option is used in the production server deployment script.
 patch_production() {
 sed -i 's/instances: [2-9]/instances: 9/' fablo-config.yaml
 }
@@ -45,12 +27,6 @@ case "$1" in
   ;;
   production)
     patch_production
-  ;;
-  entrypoint)
-    entrypoint
-  ;;
-  fablo_rest)
-    fablo_rest
   ;;
   *)
     default

@@ -1,5 +1,11 @@
 #!/bin/sh
 
+#
+# This shell script tests the functionalities of the
+# lirisi, a Linkable Ring Signature library that has
+# a CLI interface.
+#
+
 # POSIX `seq`.
 pseq () { j=$1 ; while [ "$j" -le "$2" ] ; do printf %s\\n "$j" ; j=$(( j + 1 )) ; done ; }
 

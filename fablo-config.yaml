@@ -35,14 +35,14 @@ channels:
       - name: Voter
         peers:
           - peer0 # MUST have 'peer0' as the first peer for 'explorer' to work.
-          - peer1 # Do not edit, use line 28 to control the number of peers.
-          - peer2 # Do not edit, use line 28 to control the number of peers.
-          - peer3 # Do not edit, use line 28 to control the number of peers.
-          - peer4 # Do not edit, use line 28 to control the number of peers.
-          - peer5 # Do not edit, use line 28 to control the number of peers.
-          - peer6 # Do not edit, use line 28 to control the number of peers.
-          - peer7 # Do not edit, use line 28 to control the number of peers.
-          - peer8 # Do not edit, use line 28 to control the number of peers.
+          - peer1 # Do not edit, use line 26 to control the number of peers.
+          - peer2 # Do not edit, use line 26 to control the number of peers.
+          - peer3 # Do not edit, use line 26 to control the number of peers.
+          - peer4 # Do not edit, use line 26 to control the number of peers.
+          - peer5 # Do not edit, use line 26 to control the number of peers.
+          - peer6 # Do not edit, use line 26 to control the number of peers.
+          - peer7 # Do not edit, use line 26 to control the number of peers.
+          - peer8 # Do not edit, use line 26 to control the number of peers.
 
 chaincodes:
   - name: SentinelVote
@@ -56,30 +56,42 @@ chaincodes:
           - Voter
 
 hooks :
+  # Each sed or awk command is a patch to the Fabric configuration files:
+  #
+  # The first (sed) command replaces example.com with
+  # sentinelvote.tech in docker-compose.yaml, for branding purposes.
+  #
+  # The second (sed) command replaces requiredPeerCount
+  # in fabric-config/collections/SentinelVote.json, to
+  # mitigate a bug in creating private data collections
+  # on a Fabric network with less than 2 peers.
+  #
+  # The third (awk) command increases the max message size
+  # in bytes that GRPC server and client can receive and
+  # send, so that Fabric can handle a large string size
+  # of the folded public keys.
+  #
+  # The fourth (docker) command builds a modified docker
+  # image of fablo-rest, which achieves the same purpose
+  # (handling large folded public keys) for the fablo-rest service.
+  #
+  # The fifth (sed) command replaces fablo-rest docker
+  # image with the forked build in docker-compose.yaml.
   postGenerate: "
     printf '\n'
-    && printf '%s\n\n' 'Replacing example.com with sentinelvote.tech in docker-compose.yaml ...' 
-    &&   set -x 
-    &&   sed -i.bak 's/example.com/sentinelvote.tech/g' fablo-target/fabric-docker/docker-compose.yaml  
-    &&   rm fablo-target/fabric-docker/docker-compose.yaml.bak 
-    &&   set +x >/dev/null 2>&1 
-    && printf '\n%s\n' 'Replacing requiredPeerCount in fabric-config/collections/* ...' 
-    &&   set -x 
-    &&   sed -i.bak '5s/[0-9]/0/g' fablo-target/fabric-config/collections/SentinelVote.json 
-    &&   rm fablo-target/fabric-config/collections/SentinelVote.json.bak 
-    &&   set +x >/dev/null 2>&1 
-    && printf '\n%s\n' 'Creating forked docker image of fablo-rest ...'
-    &&   set -x
-    &&   _dockerfile=$(./setup-fablo.sh fablo_rest)
-    &&   set +x >/dev/null 2>&1
-    && printf '\n\n%s\n' 'Building forked docker image of fablo-rest ...'
-    &&   set -x
-    &&   docker build -t ghcr.io/sentinelvote/fablo-rest:0.1.0 -f $_dockerfile .
-    &&   set +x >/dev/null 2>&1
+    && printf '%s\n' 'Replacing example.com with sentinelvote.tech in docker-compose.yaml ...'
+    &&   sed -i.bak 's/example.com/sentinelvote.tech/g' fablo-target/fabric-docker/docker-compose.yaml
+    &&   rm -v fablo-target/fabric-docker/docker-compose.yaml.bak
+    && printf '%s\n' 'Replacing requiredPeerCount in fabric-config/collections/* ...'
+    &&   sed -i.bak '5s/[0-9]/0/g' fablo-target/fabric-config/collections/SentinelVote.json
+    &&   rm -v fablo-target/fabric-config/collections/SentinelVote.json.bak
+    && printf '%s\n' 'Increasing max message size [ from (100 * 1024 ** 2) to (500 * 1024 ** 2) ] in bytes that GRPC server and client can receive and send ...'
+    &&   awk '/CORE_CHAINCODE_BUILDER/ { print; print \"      - CORE_PEER_MAXRECVMSGSIZE=524288000\"; print \"      - CORE_PEER_MAXSENDMSGSIZE=524288000\"; next }1' fablo-target/fabric-docker/docker-compose.yaml > tmpfile
+    &&   mv -fv tmpfile fablo-target/fabric-docker/docker-compose.yaml
+    && printf '\n%s\n' 'Building forked docker image of fablo-rest ...'
+    &&   BUILDKIT_PROGRESS=plain docker build --no-cache -t ghcr.io/sentinelvote/fablo-rest:0.1.0 .
     && printf '\n%s\n' 'Replacing fablo-rest docker image with forked build ...'
-    &&   set -x
     &&   sed -i.bak 's|softwaremill/fablo-rest:${FABLO_REST_VERSION}|ghcr.io/sentinelvote/fablo-rest:0.1.0|g' fablo-target/fabric-docker/docker-compose.yaml
-    &&   rm fablo-target/fabric-docker/docker-compose.yaml.bak
-    &&   set +x >/dev/null 2>&1
-    && printf '\nAll Done!\n\n'
+    &&   rm -v fablo-target/fabric-docker/docker-compose.yaml.bak
+    && printf '%s%s%s\n\n' '\033[1;32m' 'All Done!' '\033[0m'
   "
