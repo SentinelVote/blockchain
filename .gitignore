@@ -1,9 +1,10 @@
-# IDE
+# IDE/OS specific files
 .idea/shelf/
 .idea/workspace.xml
 .idea/httpRequests/
 .idea/dataSources/
 .idea/dataSources.local.xml
+.DS_Store
 
 # Get this file from https://github.com/hyperledger-labs/fablo/releases
 fablo.sh
