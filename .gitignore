@@ -1,17 +1,16 @@
-/**/node_modules/
+# IDE
+.idea/shelf/
+.idea/workspace.xml
+.idea/httpRequests/
+.idea/dataSources/
+.idea/dataSources.local.xml
 
 # Get this file from https://github.com/hyperledger-labs/fablo/releases
 fablo.sh
 
 # This is generated from the command `fablo.sh generate fablo-config.yaml`
-fablo-target/fabric-docker.sh
-fablo-target/fabric-config/
-fablo-target/hooks/
-fablo-target/fabric-docker/scripts
-fablo-target/fabric-docker/.env
-fablo-target/fabric-docker/channel-query-scripts.sh
-fablo-target/fabric-docker/commands-generated.sh
-fablo-target/fabric-docker/snapshot-scripts.sh
+fablo-target
 
-# Explicitly allow the file for posterity.
-!fablo-config.yaml
+# This folder contains generated PEM files from running test.sh
+test-lirisi
+!test-lirisi/test.sh

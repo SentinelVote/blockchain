@@ -6,7 +6,9 @@ You should be in the root repository directory, i.e. `~/path/to/blockchain`.
 
 ```sh
 ./setup-fablo.sh
-./fablo.sh recreate
+./fablo.sh prune
+./fablo.sh generate
+./fablo.sh up
 ```
 
 ---
