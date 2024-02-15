@@ -5,7 +5,7 @@ fail () { printf %s\\n "Error: $1" >&2 ; exit 1 ; }
 
 # Fetch the latest stable release of https://github.com/hyperledger-labs/fablo/
 default () {
-test command -v curl || fail "Please install curl."
+command -v curl || fail "Please install curl."
 
 url=https://github.com/hyperledger-labs/fablo/releases/download/1.2.0/fablo.sh
 script=$(basename $url)
